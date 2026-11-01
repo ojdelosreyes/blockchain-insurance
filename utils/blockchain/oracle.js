@@ -20,7 +20,10 @@ var getVechicleValuationAndCallbackToChain = function(requestId, styleId, mileag
 };
 
 var callbackVehicleValuationToChaincode = function(requestId, callbackFunctionName, vehicleValue, callback) {
-  callbackToChaincode(callbackFunctionName, [requestId, "" + vehicleValue], callback);
+  if (callbackFunctionName !== "vehicleValueOracleCallback") {
+    return callback(new Error("Unsupported oracle callback"));
+  }
+  callbackToChaincode("vehicleValueOracleCallback", [requestId, "" + vehicleValue], callback);
 };
 
 var callbackToChaincode = function(callbackFunctionName, args, callback) {
