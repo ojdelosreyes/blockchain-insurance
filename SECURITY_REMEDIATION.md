@@ -8,7 +8,7 @@ These changes are on the `security/fixes-2026-11` branch. Do not merge or deploy
 - `BLOCKCHAIN_DEPLOY_ENROLL_SECRET`: provide the rotated enrollment secret for the deployment identity. It is no longer read from `config/default.json`.
 - `JWT_AUTH_ENDPOINT`: optional HTTPS URL for the JWT service. If omitted, the application uses the existing service hostname over HTTPS. Confirm that the service supports HTTPS and that its certificate validates before deployment.
 
-The registrar credentials are supplied by the blockchain service binding (`VCAP_SERVICES`); keep that binding outside source control and rotate credentials that were previously committed or logged.
+The two tracked credential JSON files under `config/credentials/` have been removed from this branch, and the embedded registrar/deployment secrets were removed from `config/default.json`. The registrar credentials are supplied by the blockchain service binding (`VCAP_SERVICES`); keep that binding outside source control and rotate credentials that were previously committed or logged. These deletions do not erase secrets from earlier Git commits.
 
 ## Behavior changes requiring integration work
 
