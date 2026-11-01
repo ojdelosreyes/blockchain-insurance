@@ -93,8 +93,9 @@ var setupCertificates = function(){
 var enrollDeployUser = function() {
   return new Promise(function(resolve, reject){
     var enrollmentId = config.blockchain.setup.deployUser.enrollmentId;
-    var enrollSecret = config.blockchain.setup.deployUser.enrollSecret;
-    console.log("LOG: Enrolling Deploy User: " + enrollmentId + " - " + enrollSecret);
+    var enrollSecret = process.env.BLOCKCHAIN_DEPLOY_ENROLL_SECRET;
+    if (!enrollSecret) return reject(new Error("BLOCKCHAIN_DEPLOY_ENROLL_SECRET is required"));
+    console.log("LOG: Enrolling Deploy User: " + enrollmentId);
     chain.enroll(enrollmentId, enrollSecret, function(err, user){
       if (err) {
         console.log("Error enrolling deploy user...maybe already enrolled?");
@@ -123,7 +124,7 @@ var enrollDeployUser = function() {
  */
 var enrollRegistrarUser = function(user){
   return new Promise(function(resolve, reject){
-    console.log("LOG: Enrolling Registrar: " + user.enrollId + " - " + user.enrollSecret);
+    console.log("LOG: Enrolling Registrar: " + user.enrollId);
     chain.enroll(user.enrollId, user.enrollSecret, function(err, registrarUser){
       if (err) {
         console.log("Error enrolling registrar...maybe already enrolled?");
