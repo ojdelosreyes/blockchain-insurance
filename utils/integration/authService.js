@@ -36,6 +36,7 @@ module.exports = {
       json: requestData
     }, function (error, response, body) {
       if(!error && response && response.statusCode == 200 && body && body.username){
+        callback(body.username);
       }
       else{
         callback(false);
