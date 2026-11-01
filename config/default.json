@@ -6,11 +6,7 @@
     "keystorePath": "/keyValStore",
     "chaincodeId": "6d84f7985656fe782b93c7e986da6e8aa33eae1df777ce6a988931aedc2291cdf477c33cc02051334a42cf33180e25169d0fdd4a0d2d59b6c6ae170c27f8b3af",
     "devMode": false,
-    "registrarUser": {
-      "enrollmentId": "WebAppAdmin",
-      "enrollSecret": "DJY27pEnl16d"
-    },
-    "oracleUser" : "oracle",
+    "oracleUser": "oracle",
     "insurerUser": "insurer1",
     "setup": {
       "shouldSetupUsers": true,
@@ -18,13 +14,13 @@
         "waitTime": 5,
         "functionName": "init",
         "chaincodePath": "insurance_main",
-        "args": ["localhost:3000"]
+        "args": [
+          "localhost:3000"
+        ]
       },
       "deployUser": {
-        "enrollmentId": "test_user4",
-        "enrollSecret": "4nXSrfoYGFCP"
+        "enrollmentId": "test_user4"
       }
-
     },
     "users": [
       {
@@ -183,7 +179,6 @@
   },
   "web": {
     "auth": {
-      "secret": "123",
       "name": "exampleAPI"
     },
     "status": {

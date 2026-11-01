@@ -181,7 +181,7 @@ func (t *Claim) UpdatePayment(payment ClaimDetailsSettlementPayment) (error){
 		if aPayment.Id == payment.Id { paymentIndex = index}
 	}
 
-	if paymentIndex == -1 { errors.New("Unable to find payment with id: " + payment.Id) }
+	if paymentIndex == -1 { return errors.New("Unable to find payment with id: " + payment.Id) }
 
 	t.Details.Settlement.Payments[paymentIndex] = payment
 

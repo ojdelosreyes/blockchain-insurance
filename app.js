@@ -103,7 +103,7 @@ app.use(logger('dev'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use('/style', express.static(path.join(__dirname, '/views/style')));
-app.use(routingHelperFunctions.unlessRoute(["/auth", "/swagger.json","/socket.io/", "/" + apiPath.base + "/oracle*", "/crash/notification"], auth.middleware));
+app.use(routingHelperFunctions.unlessRoute(["/auth", "/swagger.json", "/socket.io/"], auth.middleware));
 app.use(auth.allowOriginsMiddleware);
 
 
@@ -152,8 +152,11 @@ app.post('/auth/', validate({ body : schemas.authSchema }), function(request, re
   userService.authenticate(request.body, function(rsp){
 
     if(rsp.details && rsp.details.carInsurance){//Add following to restrict to claimant: && rsp.details.carInsurance.type === "claimant"){
-      auth.signJWT(request.body, {secret:"123", name: username}, function(resp){
-        console.log(resp);
+      if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        response.status(500).json({ reason: "Authentication is not configured securely" });
+        return;
+      }
+      auth.signJWT(request.body, {secret: process.env.JWT_SECRET, name: username}, function(resp){
         if(resp){
           response.setHeader('Content-Type', 'application/json');
           response.setHeader('Token', resp);
@@ -654,7 +657,7 @@ app.get('/' + apiPath.base + '/oracle/vehicle/:styleId/value', function(request,
 
   var mileage = request.query.mileage;
   var requestId = request.query.requestId;
-  var callbackFunctionName = request.query.callbackFunction;
+  var callbackFunctionName = "vehicleValueOracleCallback";
   var styleId = request.params.styleId;
 
   oracle.requestVehicleValuation(requestId, styleId, mileage, callbackFunctionName, function() {
