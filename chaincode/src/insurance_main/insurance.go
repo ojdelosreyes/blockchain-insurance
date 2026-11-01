@@ -57,7 +57,8 @@ func (t *InsuranceChaincode) Init(stub shim.ChaincodeStubInterface, function str
 func (t *InsuranceChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("invoke is running " + function)
 
-	caller, caller_affiliation, _ := t.get_caller_data(stub)
+	caller, caller_affiliation, err := t.get_caller_data(stub)
+	if err != nil { return nil, errors.New("Unable to establish transaction identity") }
 
 	// Handle different functions
 	if function == "init" {
@@ -93,7 +94,8 @@ func (t *InsuranceChaincode) Invoke(stub shim.ChaincodeStubInterface, function s
 func (t *InsuranceChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("query is running " + function)
 
-	caller, caller_affiliation, _ := t.get_caller_data(stub)
+	caller, caller_affiliation, err := t.get_caller_data(stub)
+	if err != nil { return nil, errors.New("Unable to establish transaction identity") }
 
 	// Handle different functions
 	if function == "retrieveAllPolicies" {
@@ -178,7 +180,7 @@ func (t *InsuranceChaincode) createClaim(stub shim.ChaincodeStubInterface, calle
 	fmt.Println("running createClaim()")
 
 	if len(args) < 4 {
-		return nil, errors.New("Incorrect number of arguments. Expecting at least (RelatedPolicy,Description, Date, IncidentType)")
+		return nil, errors.New("Incorrect number of arguments. Expecting RelatedPolicy, Description, Date and IncidentType")
 	}
 
 	claim := NewClaim("", args[0], args[1], args[2], args[3])
@@ -196,6 +198,7 @@ func (t *InsuranceChaincode) createClaim(stub shim.ChaincodeStubInterface, calle
 
 		return nil, err
 	} else if (claim.Details.Incident.Type == MULTIPLE_PARTIES) {
+		if len(args) != 6 || args[4] == "" { return nil, errors.New("Multiple-party claims require other-party registration and liability") }
 		isLiable, err := strconv.ParseBool(args[5])
 		if err != nil { return nil, err }
 		return t.processMultiplePartyClaimCreation(stub, claim, args[4], isLiable)
@@ -451,18 +454,11 @@ func (t *InsuranceChaincode) queryOracleForVehicleValue(stub shim.ChaincodeStubI
 //					 name passed.
 //==============================================================================================================================
 
-func (t *InsuranceChaincode)  get_caller_data(stub shim.ChaincodeStubInterface) (string, string, error){
-
+func (t *InsuranceChaincode) get_caller_data(stub shim.ChaincodeStubInterface) (string, string, error) {
 	user, err := t.get_username(stub)
-
-	if err != nil { user = "dummy-user" }
-
-	affiliation, err := t.check_affiliation(stub);
-
-	if err != nil { affiliation = "dummy-affiliation" }
-
-	fmt.Printf("caller_data: %s %s", user, affiliation)
-
+	if err != nil || user == "" { return "", "", errors.New("unable to establish caller identity") }
+	affiliation, err := t.check_affiliation(stub)
+	if err != nil || affiliation == "" { return "", "", errors.New("unable to establish caller affiliation") }
 	return user, affiliation, nil
 }
 
@@ -717,6 +713,11 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 
 	if err != nil {	fmt.Printf("\nAGREE_PAYOUT_AMOUNT: Failed to retrieve claim Id: %s", err); return nil, errors.New("AGREE_PAYOUT_AMOUNT: Error retrieving claim with claimId = " + args[0]) }
 
+	if caller_affiliation != ROLE_POLICY_HOLDER { return nil, errors.New("Only the policyholder may agree to a payout") }
+	policy, err := RetrievePolicy(stub, theClaim.Relations.RelatedPolicy)
+	if err != nil { return nil, errors.New("Unable to retrieve related policy") }
+	if policy.Relations.Owner != caller { return nil, errors.New("Caller is not the policyholder for this claim") }
+
 	if theClaim.Details.Status != STATE_AWAITING_CLAIMANT_CONFIRMATION{
 		fmt.Println("AGREE_PAYOUT_AMOUNT: Incorrect number of arguments. Expecting 2 (claimId, agreement)")
 		return nil, errors.New("AGREE_PAYOUT_AMOUNT: Incorrect number of arguments. Expecting 2 (claimId, agreement)")
@@ -732,8 +733,6 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 		theClaim.Details.Status = STATE_SETTLED
 		theClaim.Details.Settlement.Dispute = false
 
-		policy, err := RetrievePolicy(stub, theClaim.Relations.RelatedPolicy)
-
 		if err != nil {
 			fmt.Printf("AGREE_PAYOUT_AMOUNT: Error getting policy with id %s", theClaim.Relations.RelatedPolicy);
 			return nil, errors.New("Policy doesnt exist");
@@ -741,6 +740,7 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 
 		//Add pending payments to claim
 		theClaim, err = t.addPendingPaymentsToClaim(stub, theClaim, policy)
+		if err != nil { return nil, err }
 
 		//TODO Assuming one linked claim for now
 		var linkedClaim string
@@ -760,7 +760,7 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 	} else {
 		theClaim.Details.Settlement.Dispute = true
 	}
-	SaveClaim(stub, theClaim)
+	if _, err := SaveClaim(stub, theClaim); err != nil { return nil, err }
 
 	return nil, nil
 }
