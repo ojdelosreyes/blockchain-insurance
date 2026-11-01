@@ -700,8 +700,6 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 	fmt.Println("running agreePayoutAmount()")
 
     //
-	//TODO - Check the Security  check that this claimant has the right to view and update this claim
-	//
 	if len(args) != 2 {
 		fmt.Println("AGREE_PAYOUT_AMOUNT: Incorrect number of arguments. Expecting 2 (claimId, agreement)")
 		return nil, errors.New("AGREE_PAYOUT_AMOUNT: Incorrect number of arguments. Expecting 2 (claimId, agreement)")
@@ -733,10 +731,6 @@ func (t *InsuranceChaincode) agreePayoutAmount(stub shim.ChaincodeStubInterface,
 		theClaim.Details.Status = STATE_SETTLED
 		theClaim.Details.Settlement.Dispute = false
 
-		if err != nil {
-			fmt.Printf("AGREE_PAYOUT_AMOUNT: Error getting policy with id %s", theClaim.Relations.RelatedPolicy);
-			return nil, errors.New("Policy doesnt exist");
-		}
 
 		//Add pending payments to claim
 		theClaim, err = t.addPendingPaymentsToClaim(stub, theClaim, policy)
